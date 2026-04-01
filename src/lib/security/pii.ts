@@ -2,21 +2,17 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from "node:crypto";
 
-import { getCryptoEnv } from "@/lib/env";
+import { env } from "@/lib/env";
 
-function getEncryptionKey(): Buffer {
-  const env = getCryptoEnv();
-  return createHash("sha256").update(env.PII_ENCRYPTION_KEY).digest();
-}
+const ENCRYPTION_KEY = createHash("sha256").update(env.PII_ENCRYPTION_KEY).digest();
 
 function normalizeLookupValue(value: string): string {
   return value.trim().toLowerCase();
 }
 
 export function encryptPii(value: string): string {
-  const encryptionKey = getEncryptionKey();
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
+  const cipher = createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
   const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
@@ -28,12 +24,11 @@ export function decryptPii(payload: string | null): string | null {
     return null;
   }
 
-  const encryptionKey = getEncryptionKey();
   const buffer = Buffer.from(payload, "base64url");
   const iv = buffer.subarray(0, 12);
   const authTag = buffer.subarray(12, 28);
   const encrypted = buffer.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", encryptionKey, iv);
+  const decipher = createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
   decipher.setAuthTag(authTag);
 
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
@@ -44,7 +39,6 @@ export function piiLookupHash(value: string | null | undefined): string | null {
     return null;
   }
 
-  const env = getCryptoEnv();
   return createHmac("sha256", env.PII_HASH_SALT).update(normalizeLookupValue(value)).digest("hex");
 }
 

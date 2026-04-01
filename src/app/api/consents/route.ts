@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+import { getCurrentUserProfile } from "@/lib/data/contacts";
+import { writeAuditEvent } from "@/lib/security/audit";
+import { consentSchema } from "@/lib/security/validation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const [{ getCurrentUserProfile }, { writeAuditEvent }, { consentSchema }, { createSupabaseServerClient }] =
-    await Promise.all([
-      import("@/lib/data/contacts"),
-      import("@/lib/security/audit"),
-      import("@/lib/security/validation"),
-      import("@/lib/supabase/server")
-    ]);
-
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
