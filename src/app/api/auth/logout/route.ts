@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const { createSupabaseServerClient } = await import("@/lib/supabase/server");
-  const supabase = await createSupabaseServerClient();
+  const { createSupabaseMutableServerClient } = await import("@/lib/supabase/server");
+  const supabase = await createSupabaseMutableServerClient();
 
   await supabase.auth.signOut();
 

@@ -7,7 +7,7 @@ import { getCurrentUserProfile } from "@/lib/data/contacts";
 import { assertLoginAllowed, clearLoginFailures, registerLoginFailure } from "@/lib/security/rate-limit";
 import { loginSchema } from "@/lib/security/validation";
 import { recordUserSession, writeAuditEvent } from "@/lib/security/audit";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseMutableServerClient } from "@/lib/supabase/server";
 
 export interface LoginActionState {
   success: boolean;
@@ -40,7 +40,7 @@ export async function loginAction(_: LoginActionState, formData: FormData): Prom
     };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseMutableServerClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
