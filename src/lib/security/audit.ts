@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHmac, randomUUID } from "node:crypto";
 
-import { env } from "@/lib/env";
+import { getRateLimitEnv } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { AppRole, UserProfile } from "@/lib/types";
 
@@ -31,6 +31,7 @@ function hashValue(value: string | null | undefined): string | null {
     return null;
   }
 
+  const env = getRateLimitEnv();
   return createHmac("sha256", env.RATE_LIMIT_SALT).update(value).digest("hex");
 }
 

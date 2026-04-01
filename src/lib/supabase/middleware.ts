@@ -1,7 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { env } from "@/lib/env";
+import { getPublicSupabaseEnv } from "@/lib/env";
 
 type CookieToSet = {
   name: string;
@@ -9,7 +10,14 @@ type CookieToSet = {
   options: CookieOptions;
 };
 
-export async function updateSession(request: NextRequest): Promise<NextResponse> {
+export interface MiddlewareSessionState {
+  response: NextResponse;
+  user: User | null;
+  assuranceLevel: string | null;
+}
+
+export async function updateSession(request: NextRequest): Promise<MiddlewareSessionState> {
+  const env = getPublicSupabaseEnv();
   let response = NextResponse.next({
     request
   });
@@ -29,6 +37,24 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     }
   });
 
-  await supabase.auth.getUser();
-  return response;
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  let assuranceLevel: string | null = null;
+
+  if (user) {
+    try {
+      const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      assuranceLevel = aal.data?.currentLevel ?? null;
+    } catch {
+      assuranceLevel = null;
+    }
+  }
+
+  return {
+    response,
+    user,
+    assuranceLevel
+  };
 }

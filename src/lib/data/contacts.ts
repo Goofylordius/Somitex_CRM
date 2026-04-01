@@ -1,6 +1,5 @@
 import "server-only";
 
-import { decryptPii, maskEmail, maskPhone } from "@/lib/security/pii";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mockContacts } from "@/lib/mock";
 import type { ContactRecord, UserProfile } from "@/lib/types";
@@ -39,6 +38,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 
 export async function listContacts(): Promise<ContactRecord[]> {
   try {
+    const { decryptPii, maskEmail, maskPhone } = await import("@/lib/security/pii");
     const supabase = await createSupabaseServerClient();
     const profile = await getCurrentUserProfile();
     const mayViewClearPii = profile ? CAN_VIEW_CLEAR_PII.has(profile.role) : false;
