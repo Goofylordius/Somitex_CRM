@@ -2,17 +2,19 @@ import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from "node:crypto";
 
-import { env } from "@/lib/env";
-
-const ENCRYPTION_KEY = createHash("sha256").update(env.PII_ENCRYPTION_KEY).digest();
+import { getCryptoEnv } from "@/lib/env";
 
 function normalizeLookupValue(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function getEncryptionKey() {
+  return createHash("sha256").update(getCryptoEnv().PII_ENCRYPTION_KEY).digest();
+}
+
 export function encryptPii(value: string): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const cipher = createCipheriv("aes-256-gcm", getEncryptionKey(), iv);
   const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
@@ -28,7 +30,7 @@ export function decryptPii(payload: string | null): string | null {
   const iv = buffer.subarray(0, 12);
   const authTag = buffer.subarray(12, 28);
   const encrypted = buffer.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const decipher = createDecipheriv("aes-256-gcm", getEncryptionKey(), iv);
   decipher.setAuthTag(authTag);
 
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
@@ -39,7 +41,9 @@ export function piiLookupHash(value: string | null | undefined): string | null {
     return null;
   }
 
-  return createHmac("sha256", env.PII_HASH_SALT).update(normalizeLookupValue(value)).digest("hex");
+  return createHmac("sha256", getCryptoEnv().PII_HASH_SALT)
+    .update(normalizeLookupValue(value))
+    .digest("hex");
 }
 
 export function maskEmail(email: string | null): string | null {

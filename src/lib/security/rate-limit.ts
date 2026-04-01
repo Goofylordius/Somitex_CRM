@@ -2,14 +2,16 @@ import "server-only";
 
 import { createHmac } from "node:crypto";
 
-import { env } from "@/lib/env";
+import { getRateLimitEnv } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
 function hashIdentifier(value: string): string {
-  return createHmac("sha256", env.RATE_LIMIT_SALT).update(value.trim().toLowerCase()).digest("hex");
+  return createHmac("sha256", getRateLimitEnv().RATE_LIMIT_SALT)
+    .update(value.trim().toLowerCase())
+    .digest("hex");
 }
 
 export async function assertLoginAllowed(email: string, ipAddress: string): Promise<void> {

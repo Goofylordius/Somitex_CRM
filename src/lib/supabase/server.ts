@@ -3,7 +3,7 @@ import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { env } from "@/lib/env";
+import { getPublicSupabaseEnv } from "@/lib/env";
 
 type CookieToSet = {
   name: string;
@@ -13,6 +13,7 @@ type CookieToSet = {
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
+  const env = getPublicSupabaseEnv();
 
   return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
