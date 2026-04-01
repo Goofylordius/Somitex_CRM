@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+import { getCurrentUserProfile, listContacts } from "@/lib/data/contacts";
+import { encryptPii, piiLookupHash } from "@/lib/security/pii";
+import { writeAuditEvent } from "@/lib/security/audit";
+import { contactSchema } from "@/lib/security/validation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const [{ getCurrentUserProfile, listContacts }] = await Promise.all([import("@/lib/data/contacts")]);
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
@@ -16,15 +18,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const [{ getCurrentUserProfile }, { encryptPii, piiLookupHash }, { writeAuditEvent }, { contactSchema }, { createSupabaseServerClient }] =
-    await Promise.all([
-      import("@/lib/data/contacts"),
-      import("@/lib/security/pii"),
-      import("@/lib/security/audit"),
-      import("@/lib/security/validation"),
-      import("@/lib/supabase/server")
-    ]);
-
   const profile = await getCurrentUserProfile();
 
   if (!profile) {

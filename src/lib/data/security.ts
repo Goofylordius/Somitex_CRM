@@ -19,22 +19,13 @@ export async function getSecuritySnapshot(): Promise<SecuritySnapshot> {
 
     if (AUDIT_VIEW_ROLES.has(profile.role)) {
       const supabaseAdmin = createSupabaseAdminClient();
-      const rpcResult = await supabaseAdmin.rpc("list_tenant_audit_logs", {
-        input_tenant_id: profile.tenantId,
-        input_limit: 20
-      });
-      const data =
-        !rpcResult.error && Array.isArray(rpcResult.data)
-          ? rpcResult.data
-          : (
-              await supabaseAdmin
-                .schema("audit")
-                .from("audit_logs")
-                .select("id, action, resource_type, resource_id, actor_role, created_at, metadata")
-                .eq("tenant_id", profile.tenantId)
-                .order("created_at", { ascending: false })
-                .limit(20)
-            ).data;
+      const { data } = await supabaseAdmin
+        .schema("audit")
+        .from("audit_logs")
+        .select("id, action, resource_type, resource_id, actor_role, created_at, metadata")
+        .eq("tenant_id", profile.tenantId)
+        .order("created_at", { ascending: false })
+        .limit(20);
 
       auditLogs = (data ?? []).map((entry) => ({
         id: String(entry.id),

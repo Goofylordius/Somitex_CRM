@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+import { getCurrentUserProfile } from "@/lib/data/contacts";
+import { writeAuditEvent } from "@/lib/security/audit";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const [{ getCurrentUserProfile }, { writeAuditEvent }, { createSupabaseAdminClient }, { createSupabaseServerClient }] =
-    await Promise.all([
-      import("@/lib/data/contacts"),
-      import("@/lib/security/audit"),
-      import("@/lib/supabase/admin"),
-      import("@/lib/supabase/server")
-    ]);
-
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
