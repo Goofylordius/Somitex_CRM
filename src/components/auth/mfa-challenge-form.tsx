@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function MfaChallengeForm() {
-  const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +27,7 @@ export function MfaChallengeForm() {
       }
 
       if (aal.data.currentLevel === "aal2") {
-        router.replace("/");
+        window.location.assign("/index.html");
         return;
       }
 
@@ -67,7 +65,7 @@ export function MfaChallengeForm() {
     }
 
     void bootstrap();
-  }, [router, supabase]);
+  }, [supabase]);
 
   async function handleVerify() {
     if (!factorId || !code.trim()) {
@@ -99,12 +97,24 @@ export function MfaChallengeForm() {
       return;
     }
 
-    await fetch("/api/auth/mfa/complete", {
-      method: "POST"
-    });
+    const session = await supabase.auth.getSession();
 
-    router.replace("/");
-    router.refresh();
+    if (session.error || !session.data.session) {
+      setError("Sitzung konnte nach der MFA-Bestaetigung nicht hergestellt werden.");
+      setBusy(false);
+      return;
+    }
+
+    try {
+      await fetch("/api/auth/mfa/complete", {
+        method: "POST",
+        credentials: "include"
+      });
+    } catch (completionError) {
+      console.error("MFA completion sync failed", completionError);
+    }
+
+    window.location.assign("/index.html");
   }
 
   return (
