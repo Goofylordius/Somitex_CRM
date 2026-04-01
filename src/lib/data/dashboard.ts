@@ -41,14 +41,24 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
     if (profile && ["admin", "manager", "dsb"].includes(profile.role)) {
       const admin = createSupabaseAdminClient();
-      const { count } = await admin
-        .schema("audit")
-        .from("audit_logs")
-        .select("*", { count: "exact", head: true })
-        .eq("tenant_id", profile.tenantId)
-        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const rpcResult = await admin.rpc("count_tenant_audit_logs", {
+        input_tenant_id: profile.tenantId,
+        input_since: since
+      });
 
-      audits = count ?? 0;
+      if (!rpcResult.error) {
+        audits = Number(rpcResult.data ?? 0);
+      } else {
+        const legacyResult = await admin
+          .schema("audit")
+          .from("audit_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("tenant_id", profile.tenantId)
+          .gte("created_at", since);
+
+        audits = legacyResult.count ?? 0;
+      }
     }
 
     const pipeline = (deals ?? []).reduce((sum, deal) => {
