@@ -36,8 +36,26 @@ function hashValue(value: string | null | undefined): string | null {
 
 export async function writeAuditEvent(input: AuditEventInput): Promise<void> {
   const supabase = createSupabaseAdminClient();
+  const payload = {
+    input_tenant_id: input.tenantId,
+    input_actor_user_id: input.actorUserId,
+    input_actor_role: input.actorRole,
+    input_action: input.action,
+    input_resource_type: input.resourceType,
+    input_resource_id: input.resourceId ?? null,
+    input_session_identifier: input.sessionIdentifier ?? null,
+    input_ip_hash: hashValue(input.ipAddress),
+    input_user_agent_hash: hashValue(input.userAgent),
+    input_metadata: input.metadata ?? {}
+  };
 
-  await supabase.schema("audit").from("audit_logs").insert({
+  const rpcResult = await supabase.rpc("insert_audit_log", payload);
+
+  if (!rpcResult.error) {
+    return;
+  }
+
+  const queryResult = await supabase.schema("audit").from("audit_logs").insert({
     tenant_id: input.tenantId,
     actor_user_id: input.actorUserId,
     actor_role: input.actorRole,
@@ -49,6 +67,10 @@ export async function writeAuditEvent(input: AuditEventInput): Promise<void> {
     user_agent_hash: hashValue(input.userAgent),
     metadata: input.metadata ?? {}
   });
+
+  if (queryResult.error) {
+    console.error("Audit event could not be written.", queryResult.error);
+  }
 }
 
 export async function recordUserSession(input: SessionInput): Promise<string> {
