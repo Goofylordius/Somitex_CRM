@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
@@ -30,13 +29,13 @@ export function Sidebar({ userProfile }: SidebarProps) {
           const isActive = pathname === item.href;
 
           return (
-            <Link key={item.href} href={item.href} className={cn("sidebar-link", isActive && "is-active")}>
+            <a key={item.href} href={item.href} className={cn("sidebar-link", isActive && "is-active")}>
               <Icon size={18} />
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.caption}</small>
               </span>
-            </Link>
+            </a>
           );
         })}
       </nav>
