@@ -1,19 +1,60 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 
-import { loginAction, type LoginActionState } from "@/app/(auth)/actions";
-
-const initialState: LoginActionState = {
-  success: false,
-  error: null
-};
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function LoginForm() {
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(formData: FormData) {
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    setPending(true);
+    setError(null);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) {
+        setError("Anmeldung fehlgeschlagen. Bitte pruefen Sie Ihre Zugangsdaten.");
+        return;
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        setError("Sitzung konnte nach der Anmeldung nicht hergestellt werden.");
+        return;
+      }
+
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      if (assurance.error) {
+        setError(assurance.error.message);
+        return;
+      }
+
+      const targetPath = assurance.data.currentLevel === "aal2" ? "/index.html" : "/mfa";
+      window.location.assign(targetPath);
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
-    <form className="auth-form" action={formAction}>
+    <form
+      className="auth-form"
+      action={async (formData) => {
+        await handleSubmit(formData);
+      }}
+    >
       <label className="field-group">
         <span>E-Mail</span>
         <input className="input" type="email" name="email" autoComplete="email" required />
@@ -24,7 +65,7 @@ export function LoginForm() {
       </label>
 
       <p className="helper-text">MFA wird nach erfolgreicher Passwortpruefung als Standard erzwungen.</p>
-      {state.error ? <p className="error-text">{state.error}</p> : null}
+      {error ? <p className="error-text">{error}</p> : null}
 
       <button type="submit" className="primary-button" disabled={pending}>
         {pending ? "Anmeldung..." : "Sicher anmelden"}
