@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getCurrentUserProfile } from "@/lib/data/contacts";
-import { decryptPii } from "@/lib/security/pii";
-import { writeAuditEvent } from "@/lib/security/audit";
-import { dsarExportQuerySchema } from "@/lib/security/validation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const ALLOWED_EXPORT_ROLES = new Set(["admin", "manager", "dsb"]);
 
@@ -14,6 +11,15 @@ function escapeCsv(value: unknown): string {
 }
 
 export async function GET(request: Request) {
+  const [{ getCurrentUserProfile }, { decryptPii }, { writeAuditEvent }, { dsarExportQuerySchema }, { createSupabaseServerClient }] =
+    await Promise.all([
+      import("@/lib/data/contacts"),
+      import("@/lib/security/pii"),
+      import("@/lib/security/audit"),
+      import("@/lib/security/validation"),
+      import("@/lib/supabase/server")
+    ]);
+
   const profile = await getCurrentUserProfile();
 
   if (!profile) {
