@@ -606,7 +606,7 @@ select.form-input { cursor:pointer; }
 <div class="session-bar"><div id="session-fill" class="session-bar-fill" style="width:100%"></div></div>
 
 <!-- LOGIN SCREEN -->
-<div id="login-screen">
+<div id="login-screen" class="hidden">
   <div class="login-brand">
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="48" height="48" rx="12" fill="currentColor" opacity="0.1"/>
@@ -818,11 +818,16 @@ const Security = (() => {
   }
   function getAuditLog() { return [...auditLog]; }
 
-  function logout(reason='Manuell abgemeldet') {
+  async function logout(reason='Manuell abgemeldet') {
     stopSession();
     addAudit('auth', reason);
     state.authenticated = false;
-    showLogin();
+    try {
+      await fetch('/api/auth/logout', { method:'POST' });
+    } catch (error) {
+      console.error('Logout fehlgeschlagen', error);
+    }
+    window.location.assign('/login');
   }
 
   return { verifyPin, setPin, getLockout, setLockout, isLocked, lockoutRemaining, MAX_ATTEMPTS,
@@ -1034,11 +1039,7 @@ const I = name => icons[name] || '';
 let pinEntry = '';
 
 function showLogin() {
-  document.getElementById('login-screen').classList.remove('hidden');
-  pinEntry = '';
-  updatePinDisplay();
-  document.getElementById('login-error').textContent = '';
-  checkLockoutUI();
+  window.location.assign('/login');
 }
 function hideLogin() {
   document.getElementById('login-screen').classList.add('hidden');
@@ -2544,8 +2545,11 @@ function init() {
   loadState();
   wireEvents();
   addNotification('Willkommen! CRM v2.0 mit Cyber Security ist aktiv.');
-  addNotification('PIN-Schutz und Session-Timeout sind eingerichtet.');
-  showLogin();
+  addNotification('Supabase-Login, MFA und Session-Timeout sind aktiv.');
+  state.authenticated = true;
+  hideLogin();
+  Security.startSession();
+  renderAll();
 }
 
 init();
